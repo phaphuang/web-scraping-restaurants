@@ -1,1 +1,1 @@
-# web-scraping-tripadvisor
+# web-scraping-restaurants
