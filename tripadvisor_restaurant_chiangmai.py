@@ -17,7 +17,7 @@ def main():
 
     dl_page_src(base_url + location_url)
 
-    with open('tripadvisor.html', encoding='utf-8') as page_src:
+    with open('tripadvisor_chiangmai_restaurant.html', encoding='utf-8') as page_src:
         source = page_src.read()
 
     soup = BeautifulSoup(source, 'html.parser')
@@ -45,8 +45,6 @@ def main():
 
             review_url = ta_url + result.select('a.property_title')[0]['href']
 
-            #print("Rating: " + rating + ", Reviews: " + review_url)
-
             # get image url
             try:
                 image_url = result.select_one('.photo_booking a div img')['src']
@@ -54,7 +52,78 @@ def main():
                 image_url = 'static/images/generic.jpg'
             #print(image_url)
 
-            restaurants.append([title, rating, total_reviews, review_url, image_url])
+            ###########################################
+            ### Scraping information in review page ###
+            ###########################################
+            dl_review_page_src(review_url)
+            with open('tripadvisor_chiangmai_restaurant_review.html', encoding='utf-8') as page_src:
+                review_page = page_src.read()
+            #response = requests.get(review_url, headers=headers)
+            #rp = BeautifulSoup(response.content, 'html.parser')
+            rp = BeautifulSoup(review_url, 'html.parser')
+
+            # get address in review page
+            try:
+                street = rp.select('.address span.street-address')[0].text.strip()
+            except:
+                street = 'NaN'
+            #print(street)
+            try:
+                more_info = rp.select('.address span.extended-address')[0].text.strip()
+                #print(more_info)
+            except:
+                more_info = 'NaN'
+            try:
+                province = ' '.join(rp.select('.address span.locality')[0].text.strip().replace(',', '').split(' ')[:-1])
+            except:
+                province = 'NaN'
+            #print(province)
+            try:
+                zipcode = rp.select('.address span.locality')[0].text.strip().replace(',', '').split(' ')[-1]
+            except:
+                zipcode = 'NaN'
+            #print(zipcode)
+
+            # get phone info in review page
+            try:
+                phone = rp.select('.indirectContactInfo')[0].attrs['data-phonenumber']
+            except:
+                phone = 'NaN'
+            #print(phone)
+
+            # get open-close timeline range
+            try:
+                dayRange = rp.select('.dayRange')[0].text.strip()
+            except:
+                dayRange = 'NaN'
+            try:
+                timeRange = rp.select('.timeRange')[0].text.strip()
+            except:
+                timeRange = 'NaN'
+            #print(dayRange, timeRange)
+
+            # get cuisines' tags
+            try:
+                tags = rp.select('.cuisines div.text')[0].attrs['data-content']
+            except:
+                tags = 'NaN'
+            #print(tags)
+
+            # get all image url in review page
+            image_list = []
+            check_noscript_img = rp.select('.prw_common_location_photos span.imgWrap noscript img')
+            if not check_noscript_img:
+                lazy_load_objs1 = rp.select('.prw_common_location_photos span.imgWrap img')
+            else:
+                lazy_load_objs1 = check_noscript_img
+            for lazy_load_obj in lazy_load_objs1:
+                image_list.append(lazy_load_obj['src'])
+            lazy_load_objs2 = rp.select('.ppr_priv_two_photos span.imgWrap noscript img')
+            for lazy_load_obj in lazy_load_objs2:
+                image_list.append(lazy_load_obj['src'])
+            #print(image_list)
+
+            restaurants.append([title, rating, total_reviews, review_url, image_url, street, more_info, province, zipcode, phone, dayRange, timeRange, tags, image_list])
 
         # compute the url for the next page
         next_page = base_url + 'oa' + str((page_no + 1) * 30) + '-' + location_url
@@ -67,10 +136,7 @@ def main():
 
         soup = BeautifulSoup(source, 'html.parser')
 
-    #with open('chiangmai_restaurant.json', 'w', encoding='utf-8') as output:
-    #    output.write(json.dumps(restaurants, indent=4))
-
-    column_name = ['Restaurant Name', 'Ratings', 'No of Reviews', 'Review URL', 'Image URL']
+    column_name = ['Restaurant Name', 'Ratings', 'No of Reviews', 'Review URL', 'Image URL', 'Street', 'More Info', 'Province', 'Zipcode', 'Phone Number', 'Day Open', 'Time Open', 'Tags', 'Other Image URL']
     df = pd.DataFrame(restaurants, columns=column_name)
     df.to_csv('output/TripadvisorChiangMaiRestaurant.csv', encoding='utf-8-sig')
 
@@ -79,6 +145,13 @@ def dl_page_src(url):
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.content, 'html.parser')
     with open('tripadvisor_chiangmai_restaurant.html', 'w', encoding='utf-8') as saved_page:
+        saved_page.write(soup.prettify(encoding='utf-8').decode('utf-8'))
+
+def dl_review_page_src(url):
+    print(url)
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    with open('tripadvisor_chiangmai_restaurant_review.html', 'w', encoding='utf-8') as saved_page:
         saved_page.write(soup.prettify(encoding='utf-8').decode('utf-8'))
 
 if __name__ == '__main__':
