@@ -155,11 +155,16 @@ def main():
                 rating = 'NaN'
             #print(rating)
 
-            total_reviews = result.select('div.rating span.reviewCount a')[0].text.strip().replace(' reviews', '')
+            try:
+                total_reviews = result.select('div.rating span.reviewCount a')[0].text.strip().replace(' reviews', '')
+            except:
+                total_reviews = 'NaN'
             #print(total_reviews)
 
-            review_url = ta_url + result.select('a.property_title')[0]['href']
-
+            try:
+                review_url = ta_url + result.select('a.property_title')[0]['href']
+            except:
+                review_url = 'NaN'
             # get image url
             try:
                 image_url = result.select_one('.photo_booking a div img')['src']
@@ -226,7 +231,7 @@ def main():
             try:
                 raw_website = rp.select('.website')[0].attrs['data-ahref']
                 website = decode_url(raw_website)
-                print(website)
+                #print(website)
             except:
                 website = 'NaN'
 
@@ -244,7 +249,7 @@ def main():
                 image_list.append(lazy_load_obj['src'])
             #print(image_list)
 
-            restaurants.append([title, rating, total_reviews, review_url, image_url, street, more_info, province, zipcode, phone, dayRange, timeRange, tags, image_list])
+            restaurants.append([title, rating, total_reviews, review_url, image_url, street, more_info, province, zipcode, phone, dayRange, timeRange, tags, image_list, website])
 
         # compute the url for the next page
         next_page = base_url + 'oa' + str((page_no + 1) * 30) + '-' + location_url
@@ -257,9 +262,9 @@ def main():
 
         soup = BeautifulSoup(source, 'html.parser')
 
-    column_name = ['Restaurant Name', 'Ratings', 'No of Reviews', 'Review URL', 'Image URL', 'Street', 'More Info', 'Province', 'Zipcode', 'Phone Number', 'Day Open', 'Time Open', 'Tags', 'Other Image URL']
+    column_name = ['Restaurant Name', 'Ratings', 'No of Reviews', 'Review URL', 'Image URL', 'Street', 'More Info', 'Province', 'Zipcode', 'Phone Number', 'Day Open', 'Time Open', 'Tags', 'Other Image URL', 'Website URL']
     df = pd.DataFrame(restaurants, columns=column_name)
-    df.to_csv('/var/www/html/output/TripadvisorChiangMaiRestaurant.csv', encoding='utf-8-sig')
+    df.to_csv('/var/www/html/location/TripadvisorChiangMaiRestaurant.csv', encoding='utf-8-sig')
 
 if __name__ == '__main__':
     main()
