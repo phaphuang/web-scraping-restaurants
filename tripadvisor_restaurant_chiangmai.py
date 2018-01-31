@@ -12,6 +12,74 @@ ta_url = 'http://www.tripadvisor.com'
 base_url = 'http://www.tripadvisor.com/Restaurants-g293917-'
 location_url = 'Chiang_Mai.html'
 
+def decode_url(encoded):
+    def get_offset(n):
+        if 97 <= n <= 122:
+            return n - 61
+        if 65 <= n <= 90:
+            return n - 55
+        if 48 <= n <= 71:
+            return n - 48
+        return -1
+
+    h = {
+        '': [
+            '&', '=', 'p', '6', '?', 'H', '%', 'B', '.com', 'k', '9', '.html',
+            'n', 'M', 'r', 'www.', 'h', 'b', 't', 'a', '0', '/', 'd', 'O', 'j',
+            'http://', '_', 'L', 'i', 'f', '1', 'e', '-', '2', '.', 'N', 'm',
+            'A', 'l', '4', 'R', 'C', 'y', 'S', 'o', '+', '7', 'I', '3', 'c',
+            '5', 'u', 0, 'T', 'v', 's', 'w', '8', 'P', 0, 'g', 0
+        ],
+        'q': [
+            0, '__3F__', 0, 'Photos', 0, 'https://', '.edu', '*', 'Y', '>', 0,
+            0, 0, 0, 0, 0, '`', '__2D__', 'X', '<', 'slot', 0, 'ShowUrl',
+            'Owners', 0, '[', 'q', 0, 'MemberProfile', 0, 'ShowUserReviews',
+            '"', 'Hotel', 0, 0, 'Expedia', 'Vacation', 'Discount', 0,
+            'UserReview', 'Thumbnail', 0, '__2F__', 'Inspiration', 'V', 'Map',
+            ':', '@', 0, 'F', 'help', 0, 0, 'Rental', 0, 'Picture', 0, 0, 0,
+            'hotels', 0, 'ftp://'
+        ],
+        'x': [
+            0, 0, 'J', 0, 0, 'Z', 0, 0, 0, ';', 0, 'Text', 0, '(', 'x',
+            'GenericAds', 'U', 0, 'careers', 0, 0, 0, 'D', 0, 'members',
+            'Search', 0, 0, 0, 'Post', 0, 0, 0, 'Q', 0, '$', 0, 'K', 0, 'W', 0,
+            'Reviews', 0, ',', '__2E__', 0, 0, 0, 0, 0, 0, 0, '{', '}', 0,
+            'Cheap', ')', 0, 0, 0, '#', '.org'
+        ],
+        'z': [
+            0, 'Hotels', 0, 0, 'Icon', 0, 0, 0, 0, '.net', 0, 0, 'z', 0, 0,
+            'pages', 0, 'geo', 0, 0, 0, 'cnt', '~', 0, 0, ']', '|', 0,
+            'tripadvisor', 'Images', 'BookingBuddy', 0, 'Commerce', 0, 0,
+            'partnerKey', 0, 'area', 0, 'Deals', 'from', '\\', 0, 'urlKey', 0,
+            '\'', 0, 'WeatherUnderground', 0, 'MemberSign', 'Maps', 0, 'matchID',
+            'Packages', 'E', 'Amenities', 'Travel', '.htm', 0, '!', '^', 'G'
+        ]
+    }
+
+    decoded = ''
+    i = 0
+    while i < len(encoded):
+        j = encoded[i]
+        f = j
+        if h.get(j) and i + 1 < len(encoded):
+            i += 1
+            f += encoded[i]
+        else:
+            j = ''
+        g = get_offset(ord(encoded[i]))
+        if g < 0 or type(h[j][g]) == 'str':
+            decoded += f
+        else:
+            decoded += h[j][g]
+        i += 1
+
+    decoded = decoded.replace('__', '').replace('%253A', ':')
+    decoded = re.sub(r'.*?(http.*?)-a_url.*', r'\1', decoded)
+    decoded = re.sub(r'5F5F([A-Z\d]{2})5F5F',
+        lambda match: chr(int(match.group(1), 16)), decoded)
+
+    return decoded
+
 def main():
     restaurants = []
 
@@ -25,6 +93,8 @@ def main():
     # get last element in the pagenation (i.e.: total number of pages)
     page_count = int(soup.select('.pagination a')[-1].text.strip())
     for page_no in range(page_count):
+        if(int(page_no) % 3 == 0):
+            time.sleep(10)
         # our formula to compute the next url to download:
         # [page_no * 30]
         # page 1: base_url + location_url
@@ -37,7 +107,10 @@ def main():
         for result in page_results:
             title = result.select('.title a')[0].text.strip()
             #print(title)
-            rating = result.select_one('div.rating span.ui_bubble_rating')['alt'].split(" ")[0]
+            try:
+                rating = result.select_one('div.rating span.ui_bubble_rating')['alt'].split(" ")[0]
+            except:
+                rating = 'NaN'
             #print(rating)
 
             total_reviews = result.select('div.rating span.reviewCount a')[0].text.strip().replace(' reviews', '')
@@ -60,7 +133,7 @@ def main():
                 review_page = page_src.read()
             #response = requests.get(review_url, headers=headers)
             #rp = BeautifulSoup(response.content, 'html.parser')
-            rp = BeautifulSoup(review_url, 'html.parser')
+            rp = BeautifulSoup(review_page, 'html.parser')
 
             # get address in review page
             try:
@@ -109,6 +182,14 @@ def main():
                 tags = 'NaN'
             #print(tags)
 
+            # get website url
+            try:
+                raw_website = rp.select('.website')[0].attrs['data-ahref']
+                website = decode_url(raw_website)
+                #print(website)
+            except:
+                website = 'NaN'
+
             # get all image url in review page
             image_list = []
             check_noscript_img = rp.select('.prw_common_location_photos span.imgWrap noscript img')
@@ -142,6 +223,17 @@ def main():
 
 def dl_page_src(url):
     print(url)
+    # Create a session
+    response = requests.Session()
+
+    # Create adapters with the retry logic for each
+    http = requests.adapters.HTTPAdapter(max_retries=10)
+    https = requests.adapters.HTTPAdapter(max_retries=10)
+
+    # Replace the session's original adapters
+    response.mount('http://', http)
+    response.mount('https://', https)
+
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.content, 'html.parser')
     with open('tripadvisor_chiangmai_restaurant.html', 'w', encoding='utf-8') as saved_page:
@@ -149,6 +241,17 @@ def dl_page_src(url):
 
 def dl_review_page_src(url):
     print(url)
+    # Create a session
+    response = requests.Session()
+
+    # Create adapters with the retry logic for each
+    http = requests.adapters.HTTPAdapter(max_retries=10)
+    https = requests.adapters.HTTPAdapter(max_retries=10)
+
+    # Replace the session's original adapters
+    response.mount('http://', http)
+    response.mount('https://', https)
+
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.content, 'html.parser')
     with open('tripadvisor_chiangmai_restaurant_review.html', 'w', encoding='utf-8') as saved_page:
