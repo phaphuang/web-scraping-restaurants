@@ -25,7 +25,7 @@ def get_longitude(address):
 
 API_KEY = 'AIzaSyCKxP9RqeiMwqU4lrS0WwNabD55fjs-XHE'
 
-df = pd.read_csv('TripadvisorChiangMaiRestaurant.csv')
+df = pd.read_csv('output/TripadvisorChiangMaiRestaurant.csv')
 #df = pd.read_csv('temp.csv', encoding='utf-8')
 print(df)
 
@@ -35,4 +35,4 @@ df['Latitude'] = df['Restaurant Name'].apply(get_latitude)
 df['Longitude'] = df['Restaurant Name'].apply(get_longitude)
 print(df)
 
-df.to_csv('UpdateTripadvisorRestaurantLocation.csv')#, encoding='utf-8-sig')
+df.to_csv('output/UpdateTripadvisorRestaurantLocation.csv')#, encoding='utf-8-sig')

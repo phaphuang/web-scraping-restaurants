@@ -12,7 +12,7 @@ gmaps.configure(api_key='AIzaSyCKxP9RqeiMwqU4lrS0WwNabD55fjs-XHE') # Fill in wit
 #    (51.216671, 5.0833302),
 #    (51.333328, 4.25)
 #]
-df = pd.read_csv('UpdateTripadvisorRestaurantLocation.csv', encoding='ISO-8859-1')
+df = pd.read_csv('output/UpdateTripadvisorRestaurantLocation.csv', encoding='ISO-8859-1')
 df.dropna(axis=0, inplace=True)
 marker_locations = [(lat, lng) for lat, lng in zip(df['Latitude'], df['Longitude'])]
 #print(marker_locations)
